@@ -17,8 +17,8 @@ function toPosix(p: string): string {
 
 /**
  * Discover every file that makes up the devcontainer template inside a snapshot
- * root (a `versions/<version>` directory). Entries whose name starts with a dot
- * (mount folders such as `.copilot`/`.claude`) are ignored.
+ * root (a `versions/<version>` directory). Everything under `.devcontainer` is
+ * included; excluding runtime mount folders is the snapshot step's job.
  *
  * @param templateRoot Root that contains the `.devcontainer` template directory.
  */
@@ -28,9 +28,6 @@ export function listTemplates(templateRoot: string): Template[] {
 
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) {
-        continue;
-      }
       const full = join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
