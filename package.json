@@ -10,6 +10,7 @@
   },
   "files": [
     "dist",
+    "versions",
     ".devcontainer/devcontainer.json",
     ".devcontainer/Dockerfile"
   ],
@@ -22,8 +23,9 @@
     "depcheck": "depcheck",
     "prepublishOnly": "yarn build:ts",
     "publish": "yarn install && npm login && npm publish",
+    "snapshot": "node scripts/snapshot.mjs",
     "test": "vitest run",
-    "version": "manual-git-changelog onversion"
+    "version": "node scripts/snapshot.mjs && git add versions && manual-git-changelog onversion"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

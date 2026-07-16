@@ -26,6 +26,15 @@ export function writeTemplate(root: string, files: TemplateFiles): string {
   return root;
 }
 
+/** Write a `versions/<version>/.devcontainer` snapshot used as a merge base. */
+export function writeVersionSnapshot(
+  versionsRoot: string,
+  version: string,
+  files: TemplateFiles,
+): string {
+  return writeTemplate(join(versionsRoot, version), files);
+}
+
 export const DEVCONTAINER_V1 = `// See https://containers.dev/ for configuration reference
 {
   "name": "template",

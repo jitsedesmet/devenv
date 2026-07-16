@@ -22,23 +22,36 @@ confirm before anything is written.
 ### `init <name>`
 
 Writes `.devcontainer/devcontainer.json` (with `name` set to `<name>`) and
-`.devcontainer/Dockerfile`, and records a `.devcontainer/.devenv.lock.json`
-snapshot so later updates can tell what you changed.
+`.devcontainer/Dockerfile`, and stamps a `devenvVersion` field into
+`devcontainer.json` recording which template version was applied.
+
+If any file it would create already exists, `init` writes nothing and asks you
+to run `update` instead.
+
+`devcontainer.json` is always written canonically: keys are sorted
+lexicographically (recursively) with two-space indentation, so comments and
+custom key ordering are normalized.
 
 ### `update`
+
+devenv keeps **no per-project state file** — everything it needs is discovered
+from the repository itself (your files and the `devenvVersion` stamped in
+`devcontainer.json`). The 3-way merge *base* is the template snapshot for that
+recorded version, which is shipped inside the package (`versions/<version>/`).
 
 For every managed file:
 
 - **unchanged since devenv wrote it** – refreshed to the new template, keeping
-  your project `name`.
+  your project `name`, and the `devenvVersion` is bumped.
 - **changed by you** – you are asked how to reconcile it:
   - **M – merge** (default): `devcontainer.json` is merged with recursive
     `{ ...old, ...new }` semantics (your extra keys are kept, the template wins on
-    shared keys, your `name` is always preserved). Other files use a git-style
-    3-way merge (`git merge-file`); conflicts are written with the usual
+    shared keys, your `name` is always preserved) and re-written with keys sorted
+    lexicographically. Other files use a git-style 3-way merge (`git merge-file`)
+    against the shipped base snapshot; conflicts are written with the usual
     `<<<<<<<` markers instead of prompting.
   - **f – force**: overwrite with the new template (the `name` is still transferred).
-  - **s – skip**: leave your file untouched.
+  - **s – skip**: leave your file untouched (its `devenvVersion` stays as-is).
 
 ### Options
 
@@ -57,6 +70,11 @@ For every managed file:
 yarn install
 yarn build:ts   # compile src/ -> dist/
 yarn test       # run the vitest suite in test/
+yarn snapshot   # copy the current .devcontainer into versions/<version>/
 ```
+
+Each published version's template is snapshotted under `versions/<version>/`
+(done automatically by the `version` npm lifecycle) so it can serve as the merge
+base for projects still on that version.
 
 Dependencies are kept current automatically with Renovate.

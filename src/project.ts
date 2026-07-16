@@ -1,23 +1,20 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { readName } from './devcontainer.js';
-import type { Lock } from './manifest.js';
 
 /**
- * Determine the project name to carry into `devcontainer.json` on update. We
- * prefer the name the user already has on disk (so it is preserved across
- * updates), then the recorded lock name, and finally the directory name.
+ * Determine the project name to carry into `devcontainer.json`. We prefer the
+ * name already on disk (so it is preserved across updates) and otherwise fall
+ * back to the repository directory name — everything is discovered from the repo
+ * itself, no external state is kept.
  */
-export function resolveName(targetDir: string, lock: Lock | undefined): string {
+export function resolveName(targetDir: string): string {
   const devcontainer = join(targetDir, '.devcontainer/devcontainer.json');
   if (existsSync(devcontainer)) {
     const name = readName(readFileSync(devcontainer, 'utf8'));
     if (name) {
       return name;
     }
-  }
-  if (lock?.name) {
-    return lock.name;
   }
   return basename(targetDir);
 }

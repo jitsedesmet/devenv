@@ -1,31 +1,44 @@
-import { isDevcontainerJson, setName } from './devcontainer.js';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { isDevcontainerJson, renderDevcontainer } from './devcontainer.js';
 import { writeFile } from './io.js';
-import { writeLock } from './manifest.js';
 import { devenvVersion } from './paths.js';
 import { listTemplates } from './templates.js';
-import { join } from 'node:path';
 
 export interface InitOptions {
   /** Root that holds the `.devcontainer` template. Defaults to the package root. */
   templateRoot?: string;
+  /** devenv version to stamp into `devcontainer.json`. Defaults to the running version. */
+  version?: string;
 }
 
 /**
  * Initialise a repository with the devcontainer template, transferring the given
- * project name into `devcontainer.json`.
+ * project name into `devcontainer.json` and stamping the devenv version.
+ *
+ * Refuses to touch anything if any of the files it would create already exist,
+ * pointing the user at `update` instead.
  */
 export function runInit(targetDir: string, name: string, options: InitOptions = {}): void {
-  const files: Record<string, string> = {};
+  const templates = listTemplates(options.templateRoot);
+  const version = options.version ?? devenvVersion();
 
-  for (const template of listTemplates(options.templateRoot)) {
+  const existing = templates.map((t) => t.rel).filter((rel) => existsSync(join(targetDir, rel)));
+  if (existing.length > 0) {
+    throw new Error(
+      `Refusing to init: the following file(s) already exist:\n` +
+        existing.map((rel) => `  - ${rel}`).join('\n') +
+        `\nNothing was written. Run "npx @jitsedesmet/devenv update" to update an existing setup instead.`,
+    );
+  }
+
+  for (const template of templates) {
     const content = isDevcontainerJson(template.rel)
-      ? setName(template.content, name)
+      ? renderDevcontainer(template.content, name, version)
       : template.content;
     writeFile(join(targetDir, template.rel), content);
-    files[template.rel] = content;
     console.log(`  + ${template.rel}`);
   }
 
-  writeLock(targetDir, { name, devenvVersion: devenvVersion(), files });
   console.log(`\nInitialised devenv for "${name}".`);
 }
