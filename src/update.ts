@@ -11,24 +11,22 @@ import { mergeStrings } from './merge.js';
 import { devenvVersion } from './paths.js';
 import { chooseStrategy, type Strategy } from './prompt.js';
 import { resolveName } from './project.js';
-import { listTemplates } from './templates.js';
-import { resolveBase } from './versions.js';
+import { resolveBase, resolveTemplates } from './versions.js';
 
 export interface UpdateOptions {
   /** Force a strategy for every modified file instead of prompting. */
   strategy?: Strategy;
-  /** Root that holds the current `.devcontainer` template. Defaults to the package root. */
-  templateRoot?: string;
-  /** Root that holds historical `versions/<v>` snapshots. Defaults to the package root. */
-  versionsRoot?: string;
-  /** devenv version to stamp into `devcontainer.json`. Defaults to the running version. */
+  /** devenv version to update to (selects the shipped snapshot). Defaults to the running version. */
   version?: string;
+  /** Root that holds the versioned snapshots. Defaults to the package root's `versions/`. */
+  versionsRoot?: string;
 }
 
 /**
- * Update a repository's devcontainer template. The merge base is the shipped
- * snapshot matching the `devenvVersion` recorded in the project's
- * `devcontainer.json`, so no per-project state is stored outside the repo.
+ * Update a repository's devcontainer template. Both the new template and the
+ * 3-way merge base come from the shipped `versions/` snapshots — the base is the
+ * one matching the `devenvVersion` recorded in the project's `devcontainer.json`,
+ * so no per-project state is stored outside the repo.
  *
  * Files the user has not touched since devenv wrote them are refreshed to the
  * new template (keeping the project name); files the user modified trigger a
@@ -38,13 +36,18 @@ export async function runUpdate(targetDir: string, options: UpdateOptions = {}):
   const name = resolveName(targetDir);
   const version = options.version ?? devenvVersion();
 
+  const templates = resolveTemplates(version, options.versionsRoot);
+  if (!templates) {
+    throw new Error(`No template snapshot is shipped for version ${version}.`);
+  }
+
   const devcontainerPath = join(targetDir, '.devcontainer/devcontainer.json');
   const baseVersion = existsSync(devcontainerPath)
     ? readVersion(readFileSync(devcontainerPath, 'utf8'))
     : undefined;
   const base = resolveBase(baseVersion, options.versionsRoot);
 
-  for (const template of listTemplates(options.templateRoot)) {
+  for (const template of templates) {
     const { rel } = template;
     const dest = join(targetDir, rel);
     const isJson = isDevcontainerJson(rel);

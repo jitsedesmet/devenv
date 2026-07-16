@@ -1,8 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { packageRoot } from './paths.js';
 
-/** Directory (relative to a repository root) that holds the managed template. */
+/** Directory (relative to a snapshot root) that holds the managed template. */
 export const TEMPLATE_DIR = '.devcontainer';
 
 export interface Template {
@@ -17,15 +16,13 @@ function toPosix(p: string): string {
 }
 
 /**
- * Discover every file that makes up the devcontainer template shipped with this
- * package. Entries whose name starts with a dot (mount folders such as
- * `.copilot`/`.claude`, or our own lock file) are ignored so they are neither
- * shipped nor managed.
+ * Discover every file that makes up the devcontainer template inside a snapshot
+ * root (a `versions/<version>` directory). Entries whose name starts with a dot
+ * (mount folders such as `.copilot`/`.claude`) are ignored.
  *
  * @param templateRoot Root that contains the `.devcontainer` template directory.
- *                     Defaults to the installed package root.
  */
-export function listTemplates(templateRoot: string = packageRoot()): Template[] {
+export function listTemplates(templateRoot: string): Template[] {
   const base = join(templateRoot, TEMPLATE_DIR);
   const result: Template[] = [];
 

@@ -3,13 +3,13 @@ import { join } from 'node:path';
 import { isDevcontainerJson, renderDevcontainer } from './devcontainer.js';
 import { writeFile } from './io.js';
 import { devenvVersion } from './paths.js';
-import { listTemplates } from './templates.js';
+import { resolveTemplates } from './versions.js';
 
 export interface InitOptions {
-  /** Root that holds the `.devcontainer` template. Defaults to the package root. */
-  templateRoot?: string;
-  /** devenv version to stamp into `devcontainer.json`. Defaults to the running version. */
+  /** devenv version to install (selects the shipped snapshot). Defaults to the running version. */
   version?: string;
+  /** Root that holds the versioned snapshots. Defaults to the package root's `versions/`. */
+  versionsRoot?: string;
 }
 
 /**
@@ -20,8 +20,11 @@ export interface InitOptions {
  * pointing the user at `update` instead.
  */
 export function runInit(targetDir: string, name: string, options: InitOptions = {}): void {
-  const templates = listTemplates(options.templateRoot);
   const version = options.version ?? devenvVersion();
+  const templates = resolveTemplates(version, options.versionsRoot);
+  if (!templates) {
+    throw new Error(`No template snapshot is shipped for version ${version}.`);
+  }
 
   const existing = templates.map((t) => t.rel).filter((rel) => existsSync(join(targetDir, rel)));
   if (existing.length > 0) {

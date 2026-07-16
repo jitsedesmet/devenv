@@ -10,9 +10,7 @@
   },
   "files": [
     "dist",
-    "versions",
-    ".devcontainer/devcontainer.json",
-    ".devcontainer/Dockerfile"
+    "versions"
   ],
   "engines": {
     "node": ">=18.3.0"
