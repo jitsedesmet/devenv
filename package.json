@@ -1,19 +1,38 @@
 {
   "name": "@jitsedesmet/devenv",
-  "type": "module",
   "version": "0.0.1",
   "description": "Personal initialization scrip for development environment",
   "packageManager": "yarn@1.22.22",
   "repository": "git+https://github.com/jitsedesmet/devenv#",
+  "type": "module",
+  "bin": {
+    "devenv": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    ".devcontainer/devcontainer.json",
+    ".devcontainer/Dockerfile"
+  ],
+  "engines": {
+    "node": ">=18.3.0"
+  },
   "scripts": {
     "build:ts": "tsc -b",
     "clean": "git clean -dfx",
     "depcheck": "depcheck",
+    "prepublishOnly": "yarn build:ts",
     "publish": "yarn install && npm login && npm publish",
+    "test": "vitest run",
     "version": "manual-git-changelog onversion"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
+    "depcheck": "^1.4.7",
     "manual-git-changelog": "^1.0.2",
-    "depcheck": "^1.4.7"
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
   }
 }
