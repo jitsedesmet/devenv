@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { removeTempDir } from './safety.js';
 
 export interface StringMergeResult {
   content: string;
@@ -46,6 +47,6 @@ export function mergeStrings(base: string, ours: string, theirs: string): String
       return { content: ours, conflict: true };
     }
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    removeTempDir(dir);
   }
 }

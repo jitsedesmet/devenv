@@ -1,7 +1,8 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeFile } from '../src/io.js';
+import { removeTempDir } from '../src/safety.js';
 
 /** Create a throwaway directory that is cleaned up by `cleanup()`. */
 export function tempDir(prefix = 'devenv-test-'): string {
@@ -10,7 +11,7 @@ export function tempDir(prefix = 'devenv-test-'): string {
 
 export function cleanup(...dirs: string[]): void {
   for (const dir of dirs) {
-    rmSync(dir, { recursive: true, force: true });
+    removeTempDir(dir);
   }
 }
 

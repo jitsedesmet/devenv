@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { isDevcontainerJson, renderDevcontainer } from './devcontainer.js';
 import { writeFile } from './io.js';
 import { devenvVersion } from './paths.js';
+import { resolveWithin } from './safety.js';
 import { resolveTemplates } from './versions.js';
 
 export interface InitOptions {
@@ -26,7 +26,7 @@ export function runInit(targetDir: string, name: string, options: InitOptions = 
     throw new Error(`No template snapshot is shipped for version ${version}.`);
   }
 
-  const existing = templates.map((t) => t.rel).filter((rel) => existsSync(join(targetDir, rel)));
+  const existing = templates.map((t) => t.rel).filter((rel) => existsSync(resolveWithin(targetDir, rel)));
   if (existing.length > 0) {
     throw new Error(
       `Refusing to init: the following file(s) already exist:\n` +
@@ -39,7 +39,7 @@ export function runInit(targetDir: string, name: string, options: InitOptions = 
     const content = isDevcontainerJson(template.rel)
       ? renderDevcontainer(template.content, name, version)
       : template.content;
-    writeFile(join(targetDir, template.rel), content);
+    writeFile(resolveWithin(targetDir, template.rel), content);
     console.log(`  + ${template.rel}`);
   }
 

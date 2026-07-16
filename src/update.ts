@@ -11,6 +11,7 @@ import { mergeStrings } from './merge.js';
 import { devenvVersion } from './paths.js';
 import { chooseStrategy, type Strategy } from './prompt.js';
 import { resolveName } from './project.js';
+import { resolveWithin } from './safety.js';
 import { resolveBase, resolveTemplates } from './versions.js';
 
 export interface UpdateOptions {
@@ -49,7 +50,7 @@ export async function runUpdate(targetDir: string, options: UpdateOptions = {}):
 
   for (const template of templates) {
     const { rel } = template;
-    const dest = join(targetDir, rel);
+    const dest = resolveWithin(targetDir, rel);
     const isJson = isDevcontainerJson(rel);
     const theirs = isJson ? renderDevcontainer(template.content, name, version) : template.content;
 
