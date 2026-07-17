@@ -2,6 +2,14 @@
   "name": "@jitsedesmet/devenv",
   "version": "0.0.1",
   "description": "Personal initialization scrip for development environment",
+  "keywords": [
+    "devcontainer",
+    "devenv",
+    "template",
+    "cli"
+  ],
+  "author": "Jitse De Smet",
+  "license": "MIT",
   "packageManager": "yarn@1.22.22",
   "repository": "git+https://github.com/jitsedesmet/devenv#",
   "type": "module",
@@ -20,7 +28,7 @@
     "clean": "git clean -dfx",
     "depcheck": "depcheck",
     "prepublishOnly": "yarn build:ts",
-    "publish": "yarn install && npm login && npm publish",
+    "release": "yarn install && npm login && npm publish",
     "snapshot": "node scripts/snapshot.mjs",
     "test": "vitest run",
     "version": "node scripts/snapshot.mjs && git add versions && manual-git-changelog onversion"

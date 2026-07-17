@@ -150,6 +150,28 @@ describe('init + update workflow', () => {
     expect(dc['devenvVersion']).toBe('1.0.0');
   });
 
+  it('merges text files without a base snapshot without dropping upstream lines', async () => {
+    initProject('webapp');
+    // Drop the recorded version so no base snapshot can be resolved.
+    writeFileSync(join(target, DC), read(target, DC).replace('  "devenvVersion": "1.0.0",\n', ''));
+    // The user has their own edit on top of the template.
+    writeFileSync(
+      join(target, DF),
+      read(target, DF).replace('ENV DEVCONTAINER=true', 'ENV DEVCONTAINER=true\nENV MY_CUSTOM=1'),
+    );
+
+    shipV2();
+    await update('merge');
+
+    const df = read(target, DF);
+    // The user's change is kept.
+    expect(df).toContain('ENV MY_CUSTOM=1');
+    // The upstream change is surfaced, not silently dropped.
+    expect(df).toContain('less man-db sudo curl nano git');
+    // With no base to reconcile against, the merge yields a conflict to resolve.
+    expect(df).toContain('<<<<<<<');
+  });
+
   it('preserves user customisations across repeated updates', async () => {
     initProject('webapp');
     writeFileSync(

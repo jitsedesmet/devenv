@@ -4,6 +4,7 @@
 import { copyFileSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { RUNTIME_ONLY_DIRS } from './runtime-dirs.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
@@ -13,7 +14,9 @@ const destination = join(root, 'versions', version, '.devcontainer');
 
 function copyTree(from, to) {
   for (const entry of readdirSync(from, { withFileTypes: true })) {
-    if (entry.name.startsWith('.')) {
+    // Skip only the runtime-only bind-mount dirs; every other file (including
+    // regular dot files) is part of the template and must be shipped.
+    if (RUNTIME_ONLY_DIRS.includes(entry.name)) {
       continue;
     }
     const fromPath = join(from, entry.name);

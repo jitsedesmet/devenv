@@ -93,11 +93,18 @@ export async function runUpdate(targetDir: string, options: UpdateOptions = {}):
       writeFile(dest, mergeDevcontainer(ours, theirs, name, version));
       console.log(`  m ${rel} (merged)`);
     } else {
-      const result = mergeStrings(baseContent ?? theirs, ours, theirs);
+      // With no shipped base snapshot we cannot tell the user's edits from the
+      // upstream ones, so merge against an empty base: this never drops upstream
+      // lines, it surfaces them as a conflict for the user to reconcile.
+      const result = mergeStrings(baseContent ?? '', ours, theirs);
       writeFile(dest, result.content);
-      console.log(
-        `  m ${rel} (merged${result.conflict ? ' with conflicts — please resolve manually' : ''})`,
-      );
+      if (result.failed) {
+        console.log(`  m ${rel} (unchanged — git unavailable, could not merge)`);
+      } else {
+        console.log(
+          `  m ${rel} (merged${result.conflict ? ' with conflicts — please resolve manually' : ''})`,
+        );
+      }
     }
   }
 

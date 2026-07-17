@@ -5,7 +5,7 @@ import { findTargetDir, devenvVersion } from './paths.js';
 import { confirm } from './prompt.js';
 import { runInit } from './init.js';
 import { runUpdate } from './update.js';
-import type { Strategy } from './prompt.js';
+import { resolveStrategy } from './prompt.js';
 
 const HELP = `devenv — publish and sync a personal devcontainer setup
 
@@ -23,14 +23,6 @@ Options:
 
 The target directory is the root of the current git repository, or the current
 working directory when it is not a git repository.`;
-
-function resolveStrategy(values: { merge?: boolean; force?: boolean; skip?: boolean }): Strategy | undefined {
-  const chosen = (['merge', 'force', 'skip'] as const).filter((key) => values[key]);
-  if (chosen.length > 1) {
-    throw new Error(`Only one of --merge, --force or --skip may be used (got ${chosen.join(', ')}).`);
-  }
-  return chosen[0];
-}
 
 async function main(): Promise<number> {
   const { values, positionals } = parseArgs({

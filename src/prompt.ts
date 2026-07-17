@@ -3,6 +3,19 @@ import { stdin, stdout } from 'node:process';
 
 export type Strategy = 'merge' | 'force' | 'skip';
 
+/**
+ * Resolve the non-interactive strategy from the CLI flags, ensuring at most one
+ * of `--merge`, `--force` or `--skip` was given. Returns `undefined` when none
+ * was passed (the caller should then prompt).
+ */
+export function resolveStrategy(values: { merge?: boolean; force?: boolean; skip?: boolean }): Strategy | undefined {
+  const chosen = (['merge', 'force', 'skip'] as const).filter((key) => values[key]);
+  if (chosen.length > 1) {
+    throw new Error(`Only one of --merge, --force or --skip may be used (got ${chosen.join(', ')}).`);
+  }
+  return chosen[0];
+}
+
 async function ask(question: string): Promise<string> {
   const rl = createInterface({ input: stdin, output: stdout });
   try {

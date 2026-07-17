@@ -7,6 +7,8 @@ import { removeTempDir } from './safety.js';
 export interface StringMergeResult {
   content: string;
   conflict: boolean;
+  /** True when the merge could not run (git unavailable/failed); `content` is `ours`, untouched. */
+  failed?: boolean;
 }
 
 /**
@@ -15,7 +17,9 @@ export interface StringMergeResult {
  * never blocks for input: conflicting hunks are emitted with the usual
  * `<<<<<<<`/`=======`/`>>>>>>>` markers and reported back as a conflict.
  *
- * @param base   The pristine template content devenv last wrote.
+ * @param base   The pristine template content devenv last wrote, or `''` when no
+ *               base snapshot is available (forces both sides into a conflict
+ *               rather than silently discarding one).
  * @param ours   The user's current on-disk content.
  * @param theirs The new template content.
  */
@@ -44,7 +48,7 @@ export function mergeStrings(base: string, ours: string, theirs: string): String
         return { content: err.stdout.toString(), conflict: true };
       }
       // git is unavailable or failed outright: keep the user's file untouched.
-      return { content: ours, conflict: true };
+      return { content: ours, conflict: false, failed: true };
     }
   } finally {
     removeTempDir(dir);
