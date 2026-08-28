@@ -1,0 +1,36 @@
+{% if setup_type == "java" -%}
+FROM maven:3.9-eclipse-temurin-21
+
+# Install basic development tools
+RUN apt update && apt install -y less man-db sudo curl nano
+
+# The base image only ships `root`; create an unprivileged user with `sudo`
+# access, mirroring the ready-made `node` user in the Node.js image.
+ARG USERNAME={{ container_user }}
+RUN useradd --create-home --shell /bin/bash $USERNAME \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+{% else -%}
+FROM node:22
+
+# Install basic development tools
+RUN apt update && apt install -y less man-db sudo curl nano
+
+# Ensure default `node` user has access to `sudo`
+ARG USERNAME={{ container_user }}
+RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+{% endif %}
+# Set `DEVCONTAINER` environment variable to help with orientation
+ENV DEVCONTAINER=true
+
+USER {{ container_user }}
+RUN curl -fsSL https://gh.io/copilot-install | bash
+RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN git config --global alias.gitm 'commit -am' \
+    && git config --global push.autoSetupRemote true \
+    && git config --global core.editor nano \
+    && echo "alias gitm='git commit -am'" >> /home/{{ container_user }}/.bashrc \
+    && echo "alias claude-yolo='claude --dangerously-skip-permissions'" >> /home/{{ container_user }}/.bashrc \
+    && echo "alias copilot-yolo='copilot --yolo'" >> /home/{{ container_user }}/.bashrc
+USER root

@@ -24,8 +24,18 @@ tweaks with new template versions using a git-style 3-way merge.
 copier copy gh:jitsedesmet/devenv .
 ```
 
-You are asked for a `name` (the devcontainer name shown in your editor / IDE); it
-defaults to the target directory name. Copier writes:
+You are asked for:
+
+- `name` — the devcontainer name shown in your editor / IDE; defaults to the
+  target directory name.
+- `setup_type` — `node` (default) or `java`. This picks the base image and
+  toolchain; everything else (sudo access, the `claude`/`copilot` CLIs, the
+  git aliases) is identical between the two. The `java` setup targets JDK 21 +
+  Maven, i.e. what you need to build [Apache Jena](https://github.com/apache/jena)
+  — it does not clone Jena or fetch its dependencies, it just gets the tooling
+  in place.
+
+Copier writes:
 
 - `.devcontainer/devcontainer.json` — with `name` filled in
 - `.devcontainer/Dockerfile`
@@ -58,14 +68,21 @@ files instead. Review and resolve conflicts before committing — a
 
 ## How it works
 
-- `copier.yml` declares the questions (currently just `name`) and points Copier at
-  the `template/` subdirectory via `_subdirectory`.
+- `copier.yml` declares the questions (`name` and `setup_type`) and points Copier
+  at the `template/` subdirectory via `_subdirectory`. A third, hidden value,
+  `container_user`, is derived from `setup_type` (`node` for the Node.js setup,
+  `vscode` for the Java one, since the Java base image has no ready-made user)
+  and used by the templates below so they only need to key off one thing.
 - Everything under `template/` is rendered into the target project. Only files
-  ending in `.jinja` are processed as templates (the suffix is stripped);
-  `Dockerfile` is copied verbatim.
-- `template/.devcontainer/devcontainer.json.jinja` injects your `name`; the
-  `${localWorkspaceFolder}` mount variables are left untouched because Copier uses
-  `{{ ... }}` delimiters.
+  ending in `.jinja` are processed as templates (the suffix is stripped).
+- `template/.devcontainer/Dockerfile.jinja` branches on `setup_type` to pick the
+  base image and its install step (`node:22`, or `maven:3.9-eclipse-temurin-21`
+  for JDK 21 + Maven); the rest — sudo access, the `claude`/`copilot` CLI
+  installs, the git aliases — is shared between both branches.
+- `template/.devcontainer/devcontainer.json.jinja` injects your `name`, the
+  `container_user`-based paths/`remoteUser`, and a matching JetBrains backend
+  (WebStorm for Node.js, IntelliJ for Java). The `${localWorkspaceFolder}` mount
+  variables are left untouched because Copier uses `{{ ... }}` delimiters.
 - `template/{{_copier_conf.answers_file}}.jinja` renders the `.copier-answers.yml`
   file that powers `copier update`.
 

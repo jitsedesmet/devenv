@@ -6,13 +6,13 @@
   },
   "initializeCommand": "mkdir -p .devcontainer/.copilot .devcontainer/.claude",
   "mounts": [
-    "source=${localWorkspaceFolder}/.devcontainer/.copilot,target=/home/node/.copilot/,type=bind",
-    "source=${localWorkspaceFolder}/.devcontainer/.claude,target=/home/node/.claude/,type=bind"
+    "source=${localWorkspaceFolder}/.devcontainer/.copilot,target=/home/{{ container_user }}/.copilot/,type=bind",
+    "source=${localWorkspaceFolder}/.devcontainer/.claude,target=/home/{{ container_user }}/.claude/,type=bind"
   ],
-  "remoteUser": "node",
+  "remoteUser": "{{ container_user }}",
   "customizations" : {
     "jetbrains" : {
-      "backend" : "WebStorm"
+      "backend" : "{{ 'IntelliJ' if setup_type == 'java' else 'WebStorm' }}"
     }
   }
 }
