@@ -27,9 +27,10 @@ setup_type:
 
 # Not asked; derived from setup_type so both the Dockerfile and
 # devcontainer.json can key off a single value for the container's
-# unprivileged user. `node:22` ships a ready-made `node` user; the Java
-# base image doesn't, so a `vscode` user is created for it instead.
+# unprivileged user. `node:22` ships a ready-made `node` user at UID/GID
+# 1000; the Java base image (Ubuntu Noble) ships its own ready-made user
+# at UID/GID 1000 too, just named `ubuntu` instead.
 container_user:
   type: str
   when: false
-  default: "{{ 'node' if setup_type == 'node' else 'vscode' }}"
+  default: "{{ 'node' if setup_type == 'node' else 'ubuntu' }}"

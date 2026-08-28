@@ -1,19 +1,17 @@
 {% if setup_type == "java" -%}
 FROM maven:3.9-eclipse-temurin-21
 
-# The base image already sets this, but it's restated explicitly since
-# JetBrains' dev container JDK auto-detection looks for JAVA_HOME rather
-# than trusting whatever the image already bakes in.
-ENV JAVA_HOME=/opt/java/openjdk
-
 # Install basic development tools
 RUN apt update && apt install -y less man-db sudo curl nano
 
-# The base image only ships `root`; create an unprivileged user with `sudo`
-# access, mirroring the ready-made `node` user in the Node.js image.
+# This base image (Ubuntu Noble) already ships an `ubuntu` user at UID/GID
+# 1000 — the same convention the Node.js image's `node` user follows — so it
+# just needs `sudo` access, not creating from scratch. Reusing it (rather
+# than useradd'ing a second UID 1000 user, which would fail outright since
+# it's taken) also keeps the .claude/.copilot bind mounts writable, since
+# UID/GID 1000 is typically the first Linux user on the host too.
 ARG USERNAME={{ container_user }}
-RUN useradd --create-home --shell /bin/bash $USERNAME \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 {% else -%}
 FROM node:22
