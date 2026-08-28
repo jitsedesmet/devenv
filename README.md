@@ -71,8 +71,9 @@ files instead. Review and resolve conflicts before committing — a
 - `copier.yml` declares the questions (`name` and `setup_type`) and points Copier
   at the `template/` subdirectory via `_subdirectory`. A third, hidden value,
   `container_user`, is derived from `setup_type` (`node` for the Node.js setup,
-  `vscode` for the Java one, since the Java base image has no ready-made user)
-  and used by the templates below so they only need to key off one thing.
+  `ubuntu` for the Java one — its base image ships its own ready-made UID/GID
+  1000 user, just under that name) and used by the templates below so they
+  only need to key off one thing.
 - Everything under `template/` is rendered into the target project. Only files
   ending in `.jinja` are processed as templates (the suffix is stripped).
 - `template/.devcontainer/Dockerfile.jinja` branches on `setup_type` to pick the
