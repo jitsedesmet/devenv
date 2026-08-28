@@ -1,6 +1,11 @@
 {% if setup_type == "java" -%}
 FROM maven:3.9-eclipse-temurin-21
 
+# The base image already sets this, but it's restated explicitly since
+# JetBrains' dev container JDK auto-detection looks for JAVA_HOME rather
+# than trusting whatever the image already bakes in.
+ENV JAVA_HOME=/opt/java/openjdk
+
 # Install basic development tools
 RUN apt update && apt install -y less man-db sudo curl nano
 
