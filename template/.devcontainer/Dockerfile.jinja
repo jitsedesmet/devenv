@@ -13,6 +13,13 @@ RUN apt update && apt install -y less man-db sudo curl nano
 ARG USERNAME={{ container_user }}
 RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
+
+# Ubuntu's /etc/bash.bashrc prints a "To run a command as administrator..."
+# hint in every new shell until this file exists (it's normally created the
+# first time you run sudo interactively); pre-create it so terminals open
+# without that noise.
+RUN touch /home/$USERNAME/.sudo_as_admin_successful \
+    && chown $USERNAME:$USERNAME /home/$USERNAME/.sudo_as_admin_successful
 {% else -%}
 FROM node:22
 
@@ -32,8 +39,13 @@ RUN curl -fsSL https://gh.io/copilot-install | bash
 RUN curl -fsSL https://claude.ai/install.sh | bash
 RUN git config --global alias.gitm 'commit -am' \
     && git config --global push.autoSetupRemote true \
-    && git config --global core.editor nano \
-    && echo "alias gitm='git commit -am'" >> /home/{{ container_user }}/.bashrc \
-    && echo "alias claude-yolo='claude --dangerously-skip-permissions'" >> /home/{{ container_user }}/.bashrc \
-    && echo "alias copilot-yolo='copilot --yolo'" >> /home/{{ container_user }}/.bashrc
+    && git config --global core.editor nano
+
+# Plain scripts on PATH rather than shell aliases: an alias only fires in an
+# interactive shell that sources ~/.bashrc, which isn't guaranteed for every
+# terminal a JetBrains/VS Code devcontainer opens.
 USER root
+RUN printf '#!/bin/sh\nexec git commit -am "$@"\n' > /usr/local/bin/gitm \
+    && printf '#!/bin/sh\nexec claude --dangerously-skip-permissions "$@"\n' > /usr/local/bin/claude-yolo \
+    && printf '#!/bin/sh\nexec copilot --yolo "$@"\n' > /usr/local/bin/copilot-yolo \
+    && chmod +x /usr/local/bin/gitm /usr/local/bin/claude-yolo /usr/local/bin/copilot-yolo

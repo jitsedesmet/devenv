@@ -30,7 +30,7 @@ You are asked for:
   target directory name.
 - `setup_type` — `node` (default) or `java`. This picks the base image and
   toolchain; everything else (sudo access, the `claude`/`copilot` CLIs, the
-  git aliases) is identical between the two. The `java` setup targets JDK 21 +
+  `gitm`/`claude-yolo`/`copilot-yolo` shortcuts) is identical between the two. The `java` setup targets JDK 21 +
   Maven, i.e. what you need to build [Apache Jena](https://github.com/apache/jena)
   — it does not clone Jena or fetch its dependencies, it just gets the tooling
   in place.
@@ -79,7 +79,7 @@ files instead. Review and resolve conflicts before committing — a
 - `template/.devcontainer/Dockerfile.jinja` branches on `setup_type` to pick the
   base image and its install step (`node:22`, or `maven:3.9-eclipse-temurin-21`
   for JDK 21 + Maven); the rest — sudo access, the `claude`/`copilot` CLI
-  installs, the git aliases — is shared between both branches.
+  installs, the `gitm`/`claude-yolo`/`copilot-yolo` shortcuts — is shared between both branches.
 - `template/.devcontainer/devcontainer.json.jinja` injects your `name`, the
   `container_user`-based paths/`remoteUser`, and a matching JetBrains backend
   (WebStorm for Node.js, IntelliJ for Java). The `${localWorkspaceFolder}` mount
