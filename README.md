@@ -39,6 +39,7 @@ Copier writes:
 
 - `.devcontainer/devcontainer.json` — with `name` filled in
 - `.devcontainer/Dockerfile`
+- `.devcontainer/git-hooks/commit-msg` — strips AI attribution from commits (see below)
 - `.copier-answers.yml` — records the template version and your answers so future
   updates know where you started. **Do not edit it by hand.**
 
@@ -86,6 +87,38 @@ files instead. Review and resolve conflicts before committing — a
   variables are left untouched because Copier uses `{{ ... }}` delimiters.
 - `template/{{_copier_conf.answers_file}}.jinja` renders the `.copier-answers.yml`
   file that powers `copier update`.
+
+## No AI attribution in commits
+
+Claude Code and Copilot CLI both add attribution to the commits they make, which
+makes "Claude" and "Copilot" show up in GitHub's contributor list. The container
+suppresses this for everything committed inside it, in two ways:
+
+- **Claude Code managed settings.** The Dockerfile writes
+  `/etc/claude-code/managed-settings.json` with
+  `{"attribution": {"commit": "", "pr": ""}, "includeCoAuthoredBy": false}`
+  (`includeCoAuthoredBy` is deprecated, but older CLI versions still read it).
+  The system-wide managed path is used instead of `~/.claude/settings.json`
+  because `~/.claude` is bind-mounted per project from `.devcontainer/.claude`,
+  which would shadow anything baked into the image.
+- **A global `commit-msg` hook.** Copilot CLI has no opt-out setting, so
+  `template/.devcontainer/git-hooks/commit-msg` is copied to
+  `/usr/local/share/git-hooks/` and enabled with
+  `git config --global core.hooksPath`. It removes `Co-authored-by:` trailers
+  for `…+Copilot@users.noreply.github.com` and `…@anthropic.com` addresses and
+  the "🤖 Generated with [Claude Code]" footer, then trims trailing blank lines.
+  Human `Co-authored-by:` and `Signed-off-by:` trailers are kept. Because a
+  global `core.hooksPath` disables a repository's own `.git/hooks`, the hook
+  chains to the repo's `commit-msg` hook when one is present and executable.
+
+Limitations:
+
+- `git commit --no-verify` skips the hook.
+- A repo-local `core.hooksPath` (e.g. set by Husky) overrides the global one,
+  so the hook doesn't run in such repositories.
+- Commits made by Copilot's cloud agent on github.com, and PR descriptions
+  written by Copilot, are not affected.
+- Existing history is not rewritten.
 
 ## Development
 

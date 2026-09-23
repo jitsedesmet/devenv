@@ -34,12 +34,23 @@ RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
 # Set `DEVCONTAINER` environment variable to help with orientation
 ENV DEVCONTAINER=true
 
+# Keep AI tools out of the commit history (and so out of GitHub's contributor
+# list). Claude Code reads a system-wide managed settings file; ~/.claude
+# can't be used because it's bind-mounted per project and would shadow
+# anything baked into the image. `includeCoAuthoredBy` is deprecated but still
+# honoured by older CLI versions. Copilot CLI has no such setting, so a global
+# commit-msg hook strips its trailers (and Claude's, as a fallback).
+RUN mkdir -p /etc/claude-code \
+    && printf '%s\n' '{"attribution": {"commit": "", "pr": ""}, "includeCoAuthoredBy": false}' > /etc/claude-code/managed-settings.json
+COPY --chmod=755 git-hooks/ /usr/local/share/git-hooks/
+
 USER {{ container_user }}
 RUN curl -fsSL https://gh.io/copilot-install | bash
 RUN curl -fsSL https://claude.ai/install.sh | bash
 RUN git config --global alias.gitm 'commit -am' \
     && git config --global push.autoSetupRemote true \
-    && git config --global core.editor nano
+    && git config --global core.editor nano \
+    && git config --global core.hooksPath /usr/local/share/git-hooks
 
 # Plain scripts on PATH rather than shell aliases: an alias only fires in an
 # interactive shell that sources ~/.bashrc, which isn't guaranteed for every
