@@ -4,6 +4,7 @@
   "build": {
       "dockerfile": "Dockerfile"
   },
+  "runArgs": ["--dns=1.1.1.1", "--dns=8.8.8.8"],
   "initializeCommand": "mkdir -p .devcontainer/.copilot .devcontainer/.claude",
   "mounts": [
     "source=${localWorkspaceFolder}/.devcontainer/.copilot,target=/home/{{ container_user }}/.copilot/,type=bind",
