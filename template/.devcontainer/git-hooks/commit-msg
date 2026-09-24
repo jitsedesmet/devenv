@@ -1,0 +1,29 @@
+#!/bin/sh
+# Global commit-msg hook (installed via `core.hooksPath`) that strips
+# AI-tool attribution from commit messages made inside the devcontainer:
+# Copilot / Claude `Co-authored-by:` trailers and the "Generated with
+# [Claude Code]" footer. Human co-authors and every other line are kept.
+
+msg_file=$1
+tmp_file="$msg_file.strip-ai.$$"
+
+# Drop the attribution lines (case-insensitive, leading whitespace allowed),
+# then drop any blank lines left dangling at the end of the message.
+grep -v -i -E \
+    -e '^[[:space:]]*co-authored-by:.*<[0-9]+\+copilot@users\.noreply\.github\.com>' \
+    -e '^[[:space:]]*co-authored-by:.*@anthropic\.com>' \
+    -e '^[[:space:]]*(🤖[[:space:]]*)?generated with \[claude code\]' \
+    "$msg_file" \
+    | awk '
+        /^[[:space:]]*$/ { blank = blank $0 "\n"; next }
+        { printf "%s", blank; blank = ""; print }
+    ' > "$tmp_file" \
+    && mv "$tmp_file" "$msg_file" \
+    || { rm -f "$tmp_file"; exit 1; }
+
+# A global core.hooksPath replaces the repo's own .git/hooks, so chain to the
+# repo's commit-msg hook ourselves to keep it working.
+repo_hook="$(git rev-parse --git-common-dir)/hooks/commit-msg"
+if [ -x "$repo_hook" ]; then
+    exec "$repo_hook" "$@"
+fi
