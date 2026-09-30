@@ -44,6 +44,16 @@ RUN mkdir -p /etc/claude-code \
     && printf '%s\n' '{"attribution": {"commit": "", "pr": ""}, "includeCoAuthoredBy": false}' > /etc/claude-code/managed-settings.json
 COPY --chmod=755 git-hooks/ /usr/local/share/git-hooks/
 
+# The settings and hook above only cover commit trailers and Claude's PR
+# footer, so also tell the agents themselves not to attribute their work
+# anywhere (PRs, issues, comments, code). Claude Code loads the managed
+# CLAUDE.md in every session; Copilot CLI loads AGENTS.md from the
+# directories in COPILOT_CUSTOM_INSTRUCTIONS_DIRS (~/.copilot is bind-mounted
+# per project, like ~/.claude).
+COPY --chmod=644 agent-instructions/AGENTS.md /usr/local/share/agent-instructions/AGENTS.md
+RUN cp /usr/local/share/agent-instructions/AGENTS.md /etc/claude-code/CLAUDE.md
+ENV COPILOT_CUSTOM_INSTRUCTIONS_DIRS=/usr/local/share/agent-instructions
+
 USER {{ container_user }}
 RUN curl -fsSL https://gh.io/copilot-install | bash
 RUN curl -fsSL https://claude.ai/install.sh | bash
@@ -51,6 +61,12 @@ RUN git config --global alias.gitm 'commit -am' \
     && git config --global push.autoSetupRemote true \
     && git config --global core.editor nano \
     && git config --global core.hooksPath /usr/local/share/git-hooks
+{%- if git_user_name %} \
+    && git config --global user.name '{{ git_user_name | replace("'", "'\\''") }}'
+{%- endif %}
+{%- if git_user_email %} \
+    && git config --global user.email '{{ git_user_email | replace("'", "'\\''") }}'
+{%- endif %}
 
 # Plain scripts on PATH rather than shell aliases: an alias only fires in an
 # interactive shell that sources ~/.bashrc, which isn't guaranteed for every

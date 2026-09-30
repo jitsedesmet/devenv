@@ -34,12 +34,20 @@ You are asked for:
   Maven, i.e. what you need to build [Apache Jena](https://github.com/apache/jena)
   — it does not clone Jena or fetch its dependencies, it just gets the tooling
   in place.
+- `git_user_name` / `git_user_email` — the identity written to the container's
+  global git config (`user.name` / `user.email`), so every commit made inside
+  it — yours or an agent's — is authored by you. Leave either empty to skip it
+  and configure git yourself. Both are recorded in `.copier-answers.yml` like
+  every other answer, so for a public repository consider your GitHub noreply
+  address (`<id>+<username>@users.noreply.github.com`).
 
 Copier writes:
 
 - `.devcontainer/devcontainer.json` — with `name` filled in
 - `.devcontainer/Dockerfile`
 - `.devcontainer/git-hooks/commit-msg` — strips AI attribution from commits (see below)
+- `.devcontainer/agent-instructions/AGENTS.md` — tells the agents not to
+  attribute their work to themselves (see below)
 - `.copier-answers.yml` — records the template version and your answers so future
   updates know where you started. **Do not edit it by hand.**
 
@@ -69,8 +77,9 @@ files instead. Review and resolve conflicts before committing — a
 
 ## How it works
 
-- `copier.yml` declares the questions (`name` and `setup_type`) and points Copier
-  at the `template/` subdirectory via `_subdirectory`. A third, hidden value,
+- `copier.yml` declares the questions (`name`, `setup_type`, `git_user_name`
+  and `git_user_email`) and points Copier
+  at the `template/` subdirectory via `_subdirectory`. A hidden value,
   `container_user`, is derived from `setup_type` (`node` for the Node.js setup,
   `ubuntu` for the Java one — its base image ships its own ready-made UID/GID
   1000 user, just under that name) and used by the templates below so they
@@ -80,7 +89,8 @@ files instead. Review and resolve conflicts before committing — a
 - `template/.devcontainer/Dockerfile.jinja` branches on `setup_type` to pick the
   base image and its install step (`node:22`, or `maven:3.9-eclipse-temurin-21`
   for JDK 21 + Maven); the rest — sudo access, the `claude`/`copilot` CLI
-  installs, the `gitm`/`claude-yolo`/`copilot-yolo` shortcuts — is shared between both branches.
+  installs, the `gitm`/`claude-yolo`/`copilot-yolo` shortcuts, the git
+  identity from `git_user_name`/`git_user_email` — is shared between both branches.
 - `template/.devcontainer/devcontainer.json.jinja` injects your `name`, the
   `container_user`-based paths/`remoteUser`, and a matching JetBrains backend
   (WebStorm for Node.js, IntelliJ for Java). The `${localWorkspaceFolder}` mount
@@ -88,11 +98,12 @@ files instead. Review and resolve conflicts before committing — a
 - `template/{{_copier_conf.answers_file}}.jinja` renders the `.copier-answers.yml`
   file that powers `copier update`.
 
-## No AI attribution in commits
+## No AI attribution
 
 Claude Code and Copilot CLI both add attribution to the commits they make, which
-makes "Claude" and "Copilot" show up in GitHub's contributor list. The container
-suppresses this for everything committed inside it, in two ways:
+makes "Claude" and "Copilot" show up in GitHub's contributor list, and tend to
+sign PR descriptions and comments too. Work done in this container is yours, so
+it suppresses this in three ways:
 
 - **Claude Code managed settings.** The Dockerfile writes
   `/etc/claude-code/managed-settings.json` with
@@ -110,10 +121,25 @@ suppresses this for everything committed inside it, in two ways:
   Human `Co-authored-by:` and `Signed-off-by:` trailers are kept. Because a
   global `core.hooksPath` disables a repository's own `.git/hooks`, the hook
   chains to the repo's `commit-msg` hook when one is present and executable.
+- **Instructions to the agents.** The two mechanisms above only cover commit
+  trailers and Claude's PR footer, so
+  `template/.devcontainer/agent-instructions/AGENTS.md` spells the rule out for
+  the agents themselves: no AI co-author trailers or "Generated with" lines in
+  commits, PRs, issues, reviews, comments, code or docs; commit with the
+  configured git identity rather than an AI one (never `--author`, never
+  changing `user.name`/`user.email`); and don't skip the hook with
+  `--no-verify`. The Dockerfile installs it as Claude Code's managed
+  `/etc/claude-code/CLAUDE.md`, which loads in every session and can't be
+  excluded, and points Copilot CLI at it through
+  `COPILOT_CUSTOM_INSTRUCTIONS_DIRS=/usr/local/share/agent-instructions`
+  (again avoiding the bind-mounted `~/.claude` and `~/.copilot`).
 
 Limitations:
 
 - `git commit --no-verify` skips the hook.
+- The agent instructions are guidance, not enforcement: they cover PR
+  descriptions and comments that no hook can see, but an agent can still
+  ignore them.
 - A repo-local `core.hooksPath` (e.g. set by Husky) overrides the global one,
   so the hook doesn't run in such repositories.
 - Commits made by Copilot's cloud agent on github.com, and PR descriptions
