@@ -34,20 +34,17 @@ You are asked for:
   Maven, i.e. what you need to build [Apache Jena](https://github.com/apache/jena)
   — it does not clone Jena or fetch its dependencies, it just gets the tooling
   in place.
-- `git_user_name` / `git_user_email` — the identity written to the container's
-  global git config (`user.name` / `user.email`), so every commit made inside
-  it — yours or an agent's — is authored by you. Leave either empty to skip it
-  and configure git yourself. Both are recorded in `.copier-answers.yml` like
-  every other answer, so for a public repository consider your GitHub noreply
-  address (`<id>+<username>@users.noreply.github.com`).
+- `git_user_name` / `git_user_email` — written to the container's global git
+  config, so commits made inside it (yours or an agent's) are authored by you.
+  Leave empty to skip. They are recorded in `.copier-answers.yml`, so consider
+  your GitHub noreply address for public repositories.
 
 Copier writes:
 
 - `.devcontainer/devcontainer.json` — with `name` filled in
 - `.devcontainer/Dockerfile`
 - `.devcontainer/git-hooks/commit-msg` — strips AI attribution from commits (see below)
-- `.devcontainer/agent-instructions/AGENTS.md` — tells the agents not to
-  attribute their work to themselves (see below)
+- `.devcontainer/agent-instructions/AGENTS.md` — attribution rules for the agents (see below)
 - `.copier-answers.yml` — records the template version and your answers so future
   updates know where you started. **Do not edit it by hand.**
 
@@ -101,9 +98,8 @@ files instead. Review and resolve conflicts before committing — a
 ## No AI attribution
 
 Claude Code and Copilot CLI both add attribution to the commits they make, which
-makes "Claude" and "Copilot" show up in GitHub's contributor list, and tend to
-sign PR descriptions and comments too. Work done in this container is yours, so
-it suppresses this in three ways:
+makes "Claude" and "Copilot" show up in GitHub's contributor list. The container
+suppresses this in three ways:
 
 - **Claude Code managed settings.** The Dockerfile writes
   `/etc/claude-code/managed-settings.json` with
@@ -121,25 +117,17 @@ it suppresses this in three ways:
   Human `Co-authored-by:` and `Signed-off-by:` trailers are kept. Because a
   global `core.hooksPath` disables a repository's own `.git/hooks`, the hook
   chains to the repo's `commit-msg` hook when one is present and executable.
-- **Instructions to the agents.** The two mechanisms above only cover commit
-  trailers and Claude's PR footer, so
-  `template/.devcontainer/agent-instructions/AGENTS.md` spells the rule out for
-  the agents themselves: no AI co-author trailers or "Generated with" lines in
-  commits, PRs, issues, reviews, comments, code or docs; commit with the
-  configured git identity rather than an AI one (never `--author`, never
-  changing `user.name`/`user.email`); and don't skip the hook with
-  `--no-verify`. The Dockerfile installs it as Claude Code's managed
-  `/etc/claude-code/CLAUDE.md`, which loads in every session and can't be
-  excluded, and points Copilot CLI at it through
-  `COPILOT_CUSTOM_INSTRUCTIONS_DIRS=/usr/local/share/agent-instructions`
-  (again avoiding the bind-mounted `~/.claude` and `~/.copilot`).
+- **Instructions to the agents.**
+  `template/.devcontainer/agent-instructions/AGENTS.md` tells the agents not to
+  add themselves as co-authors, to commit with the configured git identity and
+  not to skip the hook ("Generated with" remarks are fine). It is installed as
+  Claude Code's managed `/etc/claude-code/CLAUDE.md` and exposed to Copilot CLI
+  via `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`.
 
 Limitations:
 
 - `git commit --no-verify` skips the hook.
-- The agent instructions are guidance, not enforcement: they cover PR
-  descriptions and comments that no hook can see, but an agent can still
-  ignore them.
+- The agent instructions are guidance; an agent can still ignore them.
 - A repo-local `core.hooksPath` (e.g. set by Husky) overrides the global one,
   so the hook doesn't run in such repositories.
 - Commits made by Copilot's cloud agent on github.com, and PR descriptions

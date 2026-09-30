@@ -25,10 +25,7 @@ setup_type:
     Java (JDK + Maven, ready to build Apache Jena): java
   default: node
 
-# Git identity baked into the container's global git config, so commits made
-# inside it (by you or by an agent) are authored by you. Leave empty to skip
-# and configure git yourself. Answers are recorded in .copier-answers.yml, so
-# consider your GitHub noreply address if the repository is public.
+# Written to the container's global git config; empty skips it.
 git_user_name:
   type: str
   help: Your name for git commits made in the devcontainer (git config user.name). Leave empty to skip.
